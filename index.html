@@ -7,30 +7,41 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Base Styles */
-        html { scroll-behavior: smooth; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        html { scroll-behavior: smooth; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f8fafc; color: #1e3a8a; -webkit-tap-highlight-color: transparent; }
         
-        /* Responsive Chart Container */
+        /* Chart container responsiveness */
         .chart-container {
             position: relative;
             width: 100%;
             max-width: 450px;
-            margin-left: auto;
-            margin-right: auto;
-            height: 220px;
+            margin: 0 auto;
+            height: 240px;
         }
-        @media (min-width: 640px) { .chart-container { height: 280px; } }
-        @media (min-width: 1024px) { .chart-container { height: 320px; } }
+        @media (min-width: 768px) { .chart-container { height: 300px; } }
 
-        /* Navigation & UI States */
-        .nav-item.active { background-color: #dbeafe; border-left: 4px solid #00529b; color: #00529b; font-weight: 700; }
-        .hover-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .drawer-transition { transition: transform 0.3s ease-in-out; }
-        
+        /* Navigation Tab Active State (as per image reference) */
+        .nav-tab { position: relative; transition: all 0.2s ease; }
+        .nav-tab.active { color: #00529b; font-weight: 700; }
+        .nav-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: #00529b;
+            border-radius: 2px;
+        }
+
         /* Utility */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
         .uit-blue-gradient { background: linear-gradient(135deg, #00529b 0%, #003366 100%); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .hover-card { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease; }
+        .hover-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px -5px rgba(0, 82, 155, 0.15); }
+        
+        /* Mobile Drawer */
+        #mobile-drawer { transition: transform 0.3s ease-in-out; }
     </style>
     <script>
         tailwind.config = {
@@ -47,387 +58,373 @@
         }
     </script>
 </head>
-<body class="flex flex-col h-screen overflow-hidden">
+<body class="bg-slate-50 overflow-x-hidden">
 
-    <!-- Chosen Palette: UIT Identity (Deep Blue / Sky / Slate) -->
-    <!-- Application Structure Plan: Mobile-first responsive dashboard with a hidden side-drawer for navigation. The information flow follows a logical educational path: Overview -> Schedule -> Projects -> Grading -> References. This hierarchy ensures the user understands the 'why' before seeing the 'how' and 'when'. -->
+    <!-- Chosen Palette: UIT Blue-Tone Dashboard (Stone 50, Blue 900, Sky 500) -->
+    <!-- Application Structure Plan: Top-bar navigation based on user-provided image. The header contains the university branding, followed by a sticky navigation sub-header. This provides maximum horizontal space for the content sections. Responsive breakpoints handle the transition from horizontal tabs to a mobile menu. -->
     <!-- Visualization & Content Choices: 
-         - Outcomes: 4 Key pillars with icons for visual scanning.
-         - Grading: Doughnut chart visualizing the 15/35/50 weighting.
-         - Schedule: Interactive accordions to manage screen real estate on mobile.
-         - Projects: Categorized grid with 20 items and live JS filtering. -->
+         - Learning Outcomes: 4 Distinct modules with icons.
+         - Assessment: Doughnut chart visualizing the 50/35/15 split.
+         - Projects: Grid of 20 categorized research topics with dynamic JS filtering.
+         - Footer: 3-column structured identity block. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
 
-    <!-- Mobile Navigation Overlay -->
-    <div id="drawer-overlay" class="fixed inset-0 bg-slate-900/50 z-40 hidden backdrop-blur-sm" onclick="toggleDrawer()"></div>
-    
-    <!-- Navigation Drawer (Mobile) -->
-    <aside id="mobile-drawer" class="fixed left-0 top-0 h-full w-72 bg-white z-50 transform -translate-x-full drawer-transition shadow-2xl flex flex-col md:hidden">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-            <img src="https://www.uit.edu.vn/strapi/uploads/UIT_20_01_f687725dd2.png" alt="UIT Logo" class="h-10">
-            <button onclick="toggleDrawer()" class="text-slate-400 text-3xl font-light">&times;</button>
-        </div>
-        <nav class="flex-1 overflow-y-auto py-4">
-            <ul class="space-y-1">
-                <li><button onclick="navigateTo('overview')" class="nav-item active w-full text-left px-6 py-4 text-slate-600">Overview & Outcomes</button></li>
-                <li><button onclick="navigateTo('schedule')" class="nav-item w-full text-left px-6 py-4 text-slate-600">Weekly Schedule</button></li>
-                <li><button onclick="navigateTo('projects')" class="nav-item w-full text-left px-6 py-4 text-slate-600">Capstone Projects</button></li>
-                <li><button onclick="navigateTo('grading')" class="nav-item w-full text-left px-6 py-4 text-slate-600">Grading Policy</button></li>
-                <li><button onclick="navigateTo('readings')" class="nav-item w-full text-left px-6 py-4 text-slate-600">References</button></li>
-            </ul>
-        </nav>
-        <div class="p-6 bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
-            NT2204 &bull; UIT &bull; 2026
-        </div>
-    </aside>
-
-    <!-- Global Header -->
-    <header class="bg-white border-b border-slate-200 px-4 h-16 flex items-center justify-between sticky top-0 z-30 shadow-sm md:shadow-none">
-        <div class="flex items-center gap-3">
-            <button onclick="toggleDrawer()" class="md:hidden p-2 text-primary text-2xl" aria-label="Menu Toggle">&#9776;</button>
-            <div class="flex items-center gap-2">
-                <img src="https://www.uit.edu.vn/strapi/uploads/UIT_20_01_f687725dd2.png" alt="UIT" class="h-8 sm:h-10">
-                <div class="hidden sm:block border-l border-slate-200 h-6 mx-2"></div>
-                <h1 class="text-sm sm:text-lg font-black text-primary tracking-tight uppercase">NT2204</h1>
+    <!-- Top Header Branding -->
+    <header class="bg-white border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 py-4 sm:py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <img src="https://www.uit.edu.vn/strapi/uploads/UIT_20_01_f687725dd2.png" alt="UIT Logo" class="h-12 sm:h-16">
+                <div class="h-10 w-px bg-slate-200 hidden sm:block"></div>
+                <div class="text-center sm:text-left">
+                    <h1 class="text-2xl sm:text-3xl font-black text-slate-800 tracking-tighter uppercase leading-none">NT2204</h1>
+                    <p class="text-blue-500 text-xs sm:text-sm font-bold uppercase tracking-widest mt-1">Advanced Distributed Computing Systems</p>
+                </div>
             </div>
-        </div>
-        <div class="hidden md:block text-right">
-            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Department of Computer Networks</p>
+            <div class="hidden md:block text-right">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">VNUHCM - UIT</p>
+                <p class="text-sm font-bold text-slate-800">Dr. Dang Van Huynh</p>
+            </div>
         </div>
     </header>
 
-    <div class="flex flex-1 overflow-hidden">
-        <!-- Persistent Sidebar (Desktop/Tablet) -->
-        <nav class="hidden md:flex w-72 bg-white border-r border-slate-200 flex-col shadow-sm">
-            <div class="p-8 border-b border-slate-50">
-                <h2 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Navigation</h2>
-                <div class="h-1 w-8 bg-primary rounded"></div>
-            </div>
-            <ul class="flex-1 py-4">
-                <li><button onclick="navigateTo('overview')" class="nav-item active w-full text-left px-8 py-4 text-slate-600 hover:bg-slate-50">Overview & Outcomes</button></li>
-                <li><button onclick="navigateTo('schedule')" class="nav-item w-full text-left px-8 py-4 text-slate-600 hover:bg-slate-50">Weekly Schedule</button></li>
-                <li><button onclick="navigateTo('projects')" class="nav-item w-full text-left px-8 py-4 text-slate-600 hover:bg-slate-50">Capstone Projects</button></li>
-                <li><button onclick="navigateTo('grading')" class="nav-item w-full text-left px-8 py-4 text-slate-600 hover:bg-slate-50">Grading Policy</button></li>
-                <li><button onclick="navigateTo('readings')" class="nav-item w-full text-left px-8 py-4 text-slate-600 hover:bg-slate-50">References</button></li>
-            </ul>
-        </nav>
-
-        <!-- Content Area -->
-        <main class="flex-1 overflow-y-auto bg-slate-50/50" id="main-scroll-area">
-            <div class="p-5 sm:p-8 md:p-14 max-w-6xl mx-auto space-y-20 md:space-y-24 pb-32">
-
-                <!-- Section: Overview -->
-                <section id="overview" class="content-section">
-                    <div class="mb-10 text-center sm:text-left">
-                        <span class="inline-block bg-blue-100 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 tracking-widest">Master Level Syllabus</span>
-                        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 leading-tight">NT2204: Advanced Distributed Computing Systems</h2>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                        <div class="lg:col-span-7 space-y-6">
-                            <h3 class="text-xl font-black text-primary uppercase tracking-wider">Detailed Description</h3>
-                            <div class="text-slate-600 leading-relaxed space-y-4 text-justify sm:text-left">
-                                <p>
-                                    As computing ecosystems shift from isolated clusters to hyper-connected heterogeneous nodes, the demand for scalable, resilient, and intelligent systems has reached unprecedented heights. This course provides a comprehensive exploration of the theoretical and practical dimensions of <strong>Distributed Systems</strong> at a graduate level. 
-                                </p>
-                                <p>
-                                    We balance classic distributed foundations—such as <span class="font-bold text-slate-800">Dataflow execution models</span> and complex <strong>scheduling via MapReduce paradigms</strong>—with contemporary innovations in <strong>Cloud-native architectures</strong> and <strong>Serverless computing</strong>. A core focus of the curriculum is <span class="text-primary font-bold">Distributed Intelligence</span>, addressing how AI is trained and orchestrated across edge-cloud continuums while maintaining rigorous <span class="text-secondary font-bold">Security and Privacy</span> standards.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div class="lg:col-span-5">
-                            <div class="uit-blue-gradient p-8 rounded-[2.5rem] text-white shadow-xl shadow-primary/20">
-                                <h4 class="text-sm font-black uppercase tracking-widest mb-4 text-sky-300">Course Lead</h4>
-                                <div class="space-y-1">
-                                    <p class="text-2xl font-black">Dr. Dang Van Huynh</p>
-                                    <p class="text-blue-100/80 text-sm font-semibold">Department of Computer Networks</p>
-                                    <p class="text-blue-100/50 text-[10px] uppercase font-bold">VNU-HCM University of Information Technology</p>
-                                </div>
-                                <div class="mt-8 grid grid-cols-2 gap-4">
-                                    <div class="bg-white/10 p-4 rounded-2xl text-center">
-                                        <span class="block text-2xl font-black">08</span>
-                                        <span class="text-[9px] uppercase font-bold opacity-60">Lectures</span>
-                                    </div>
-                                    <div class="bg-white/10 p-4 rounded-2xl text-center">
-                                        <span class="block text-2xl font-black">04</span>
-                                        <span class="text-[9px] uppercase font-bold opacity-60">Presentations</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Enhanced Outcomes Grid -->
-                    <div class="mt-16 grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover-card flex gap-4 border-l-4 border-l-primary">
-                            <span class="text-3xl">&#9729;</span>
-                            <div>
-                                <h4 class="font-black text-slate-800 text-sm mb-1 uppercase">Systems Mastery</h4>
-                                <p class="text-xs text-slate-500 leading-relaxed">Design cloud-native and serverless paradigms with a focus on performance and availability.</p>
-                            </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover-card flex gap-4 border-l-4 border-l-sky-400">
-                            <span class="text-3xl">&#129504;</span>
-                            <div>
-                                <h4 class="font-black text-slate-800 text-sm mb-1 uppercase">Distributed Intelligence</h4>
-                                <p class="text-xs text-slate-500 leading-relaxed">Implement federated learning and distributed inference across heterogeneous edge nodes.</p>
-                            </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover-card flex gap-4 border-l-4 border-l-indigo-600">
-                            <span class="text-3xl">&#128274;</span>
-                            <div>
-                                <h4 class="font-black text-slate-800 text-sm mb-1 uppercase">Security & Privacy</h4>
-                                <p class="text-xs text-slate-500 leading-relaxed">Master BFT consensus, Trusted Execution (TEEs), and Differential Privacy in distributed environments.</p>
-                            </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover-card flex gap-4 border-l-4 border-l-cyan-500">
-                            <span class="text-3xl">&#9201;</span>
-                            <div>
-                                <h4 class="font-black text-slate-800 text-sm mb-1 uppercase">Advanced Scheduling</h4>
-                                <p class="text-xs text-slate-500 leading-relaxed">Evaluate complex dataflow execution strategies and adaptive orchestration for large-scale clusters.</p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Section: Schedule -->
-                <section id="schedule" class="content-section">
-                    <div class="mb-10">
-                        <h2 class="text-2xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3">
-                            <span class="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center text-xs">1</span>
-                            Weekly Schedule
-                        </h2>
-                    </div>
-
-                    <div class="flex gap-2 mb-8 overflow-x-auto pb-4 no-scrollbar -mx-5 px-5 sm:mx-0 sm:px-0">
-                        <button class="flex-shrink-0 px-6 py-2 bg-primary text-white rounded-xl text-xs font-black shadow-lg" onclick="filterSchedule('all')">View All</button>
-                        <button class="flex-shrink-0 px-6 py-2 bg-white text-primary border border-primary/20 rounded-xl text-xs font-black hover:bg-blue-50" onclick="filterSchedule('theory')">Weeks 1-8: Lecture</button>
-                        <button class="flex-shrink-0 px-6 py-2 bg-white text-primary border border-primary/20 rounded-xl text-xs font-black hover:bg-blue-50" onclick="filterSchedule('presentation')">Weeks 9-12: Presentation</button>
-                    </div>
-
-                    <div class="space-y-3" id="schedule-container">
-                        <!-- Dynamic content -->
-                    </div>
-                </section>
-
-                <!-- Section: Projects -->
-                <section id="projects" class="content-section">
-                    <div class="mb-10">
-                        <h2 class="text-2xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3">
-                            <span class="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center text-xs">2</span>
-                            Capstone Projects
-                        </h2>
-                    </div>
-
-                    <div class="bg-slate-950 p-8 rounded-[2.5rem] text-white shadow-2xl mb-12 relative overflow-hidden">
-                        <div class="absolute right-0 top-0 w-48 h-48 bg-primary rounded-full blur-[100px] opacity-20"></div>
-                        <div class="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                            <div>
-                                <h4 class="text-sky-400 font-black uppercase tracking-widest text-[9px] mb-2">Technical</h4>
-                                <p class="font-bold text-sm">Design Report & Codebase</p>
-                            </div>
-                            <div>
-                                <h4 class="text-sky-400 font-black uppercase tracking-widest text-[9px] mb-2">Live Execution</h4>
-                                <p class="font-bold text-sm">System Demo & Presentation</p>
-                            </div>
-                            <div>
-                                <h4 class="text-sky-400 font-black uppercase tracking-widest text-[9px] mb-2">Opportunity</h4>
-                                <p class="font-bold text-sm">Research Paper Track</p>
-                            </div>
-                            <div>
-                                <h4 class="text-sky-400 font-black uppercase tracking-widest text-[9px] mb-2">Lifecycle</h4>
-                                <p class="font-bold text-sm">Proposal to Final Defense</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-2 mb-10 overflow-x-auto pb-4 no-scrollbar -mx-5 px-5 sm:mx-0 sm:px-0" id="project-filters">
-                        <!-- Filters injected via JS -->
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="projects-grid">
-                        <!-- Projects injected via JS -->
-                    </div>
-                </section>
-
-                <!-- Section: Grading -->
-                <section id="grading" class="content-section">
-                    <div class="mb-10">
-                        <h2 class="text-2xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3">
-                            <span class="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center text-xs">3</span>
-                            Grading Policy
-                        </h2>
-                    </div>
-
-                    <div class="bg-white p-8 sm:p-12 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col lg:flex-row items-center gap-12">
-                        <div class="chart-container">
-                            <canvas id="assessmentChart"></canvas>
-                        </div>
-                        <div class="w-full lg:w-1/2 space-y-6">
-                            <div class="p-6 rounded-3xl bg-slate-50 border-l-[6px] border-primary">
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="font-black text-slate-900 uppercase tracking-widest text-[10px]">Final Examination</span>
-                                    <span class="text-primary font-black">50%</span>
-                                </div>
-                                <p class="text-xs text-slate-500">Comprehensive 90-minute theoretical exam.</p>
-                            </div>
-                            <div class="p-6 rounded-3xl bg-slate-50 border-l-[6px] border-sky-400">
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="font-black text-slate-900 uppercase tracking-widest text-[10px]">Capstone Project</span>
-                                    <span class="text-sky-500 font-black">35%</span>
-                                </div>
-                                <p class="text-xs text-slate-500">Includes technical documentation and live demo.</p>
-                            </div>
-                            <div class="p-6 rounded-3xl bg-slate-50 border-l-[6px] border-slate-300">
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="font-black text-slate-900 uppercase tracking-widest text-[10px]">Attendance</span>
-                                    <span class="text-slate-400 font-black">15%</span>
-                                </div>
-                                <p class="text-xs text-slate-500">Active participation in modules and presentation slots.</p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Section: Readings -->
-                <section id="readings" class="content-section">
-                    <div class="mb-10">
-                        <h2 class="text-2xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3">
-                            <span class="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center text-xs">4</span>
-                            References
-                        </h2>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div class="space-y-6">
-                            <h3 class="font-black text-primary text-xs uppercase tracking-widest">Core Texts</h3>
-                            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover-card flex items-center gap-4">
-                                <span class="text-4xl">&#128213;</span>
-                                <div>
-                                    <h4 class="font-black text-slate-800 text-xs">Designing Data-Intensive Apps</h4>
-                                    <p class="text-[10px] text-primary font-bold">M. Kleppmann &bull; O'Reilly</p>
-                                </div>
-                            </div>
-                            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover-card flex items-center gap-4">
-                                <span class="text-4xl">&#128213;</span>
-                                <div>
-                                    <h4 class="font-black text-slate-800 text-xs">Distributed Systems (4th Ed)</h4>
-                                    <p class="text-[10px] text-primary font-bold">Maarten van Steen & Tanenbaum</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-slate-900 p-8 rounded-[2rem] text-white">
-                            <h3 class="font-black text-sky-400 text-xs uppercase tracking-widest mb-6">Key Papers</h3>
-                            <ul class="space-y-4">
-                                <li class="text-[11px] leading-relaxed opacity-80"><span class="font-black text-sky-400 mr-2">MR</span> "MapReduce: Simplified Data Processing", Dean & Ghemawat.</li>
-                                <li class="text-[11px] leading-relaxed opacity-80"><span class="font-black text-sky-400 mr-2">SPN</span> "Spanner: Google's Distributed DB", Corbett et al.</li>
-                                <li class="text-[11px] leading-relaxed opacity-80"><span class="font-black text-sky-400 mr-2">SLS</span> "On-demand Container Loading (2023)".</li>
-                            </ul>
-                        </div>
-                    </div>
-                </section>
-
+    <!-- Sticky Navigation Tab Bar -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
+            <!-- Desktop Tabs -->
+            <div class="hidden md:flex gap-10">
+                <button onclick="navigateTo('overview')" class="nav-tab active text-sm font-semibold text-slate-500 hover:text-primary h-14 px-2 flex items-center">Overview</button>
+                <button onclick="navigateTo('schedule')" class="nav-tab text-sm font-semibold text-slate-500 hover:text-primary h-14 px-2 flex items-center">Schedule</button>
+                <button onclick="navigateTo('projects')" class="nav-tab text-sm font-semibold text-slate-500 hover:text-primary h-14 px-2 flex items-center">Projects</button>
+                <button onclick="navigateTo('grading')" class="nav-tab text-sm font-semibold text-slate-500 hover:text-primary h-14 px-2 flex items-center">Grading</button>
+                <button onclick="navigateTo('readings')" class="nav-tab text-sm font-semibold text-slate-500 hover:text-primary h-14 px-2 flex items-center">References</button>
             </div>
 
-            <!-- Global Footer -->
-            <footer class="bg-slate-950 text-white pt-20 pb-12 px-6">
-                <div class="max-w-6xl mx-auto flex flex-col items-center text-center gap-12">
-                    <div class="space-y-4 max-w-xl">
-                        <div class="w-10 h-1 bg-primary mx-auto rounded"></div>
-                        <p class="text-xl sm:text-2xl font-black italic text-slate-200">
-                            "Pioneering the future of scalable intelligence."
+            <!-- Mobile Menu Toggle -->
+            <button onclick="toggleDrawer()" class="md:hidden text-primary text-xl font-bold flex items-center gap-2">
+                <span>&#9776;</span>
+                <span class="text-xs uppercase font-black">Menu</span>
+            </button>
+            
+            <div class="text-[10px] font-black text-slate-300 uppercase hidden sm:block">2026 Academic Year</div>
+        </div>
+    </nav>
+
+    <!-- Mobile Navigation Drawer -->
+    <div id="drawer-overlay" class="fixed inset-0 bg-slate-900/50 z-50 hidden backdrop-blur-sm" onclick="toggleDrawer()"></div>
+    <aside id="mobile-drawer" class="fixed left-0 top-0 h-full w-72 bg-white z-50 transform -translate-x-full shadow-2xl flex flex-col md:hidden">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+            <h3 class="font-black text-primary text-xl">NT2204</h3>
+            <button onclick="toggleDrawer()" class="text-3xl font-light text-slate-400">&times;</button>
+        </div>
+        <div class="flex-1 py-4">
+            <button onclick="navigateTo('overview')" class="w-full text-left px-8 py-4 text-slate-600 font-bold hover:bg-blue-50 hover:text-primary">Overview</button>
+            <button onclick="navigateTo('schedule')" class="w-full text-left px-8 py-4 text-slate-600 font-bold hover:bg-blue-50 hover:text-primary">Schedule</button>
+            <button onclick="navigateTo('projects')" class="w-full text-left px-8 py-4 text-slate-600 font-bold hover:bg-blue-50 hover:text-primary">Projects</button>
+            <button onclick="navigateTo('grading')" class="w-full text-left px-8 py-4 text-slate-600 font-bold hover:bg-blue-50 hover:text-primary">Grading</button>
+            <button onclick="navigateTo('readings')" class="w-full text-left px-8 py-4 text-slate-600 font-bold hover:bg-blue-50 hover:text-primary">References</button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-8 py-10 sm:py-20 space-y-24 sm:space-y-32">
+
+        <!-- Section: Overview -->
+        <section id="overview" class="content-section">
+            <div class="flex flex-col lg:flex-row gap-12 items-start">
+                <div class="lg:w-2/3 space-y-8">
+                    <div class="inline-block border-l-8 border-primary pl-6">
+                        <h2 class="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight leading-none uppercase">Course Overview</h2>
+                    </div>
+                    <div class="text-slate-600 leading-relaxed text-lg text-justify sm:text-left space-y-4">
+                        <p>
+                            Modern computing has transitioned from monolithic data centers to hyper-connected heterogeneous ecosystems. This course, <span class="text-primary font-extrabold">NT2204</span>, provides a comprehensive graduate-level exploration of <strong>Distributed Systems</strong> architecture, focusing on the core theoretical foundations and practical engineering paradigms that power today's internet-scale platforms.
                         </p>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 w-full pt-12 border-t border-white/5">
-                        <div class="flex flex-col items-center md:items-start text-center md:text-left gap-4">
-                            <img src="https://www.uit.edu.vn/strapi/uploads/UIT_20_01_f687725dd2.png" alt="UIT Logo" class="h-16 brightness-0 invert">
-                            <div>
-                                <h5 class="font-black text-sky-400 uppercase tracking-[0.2em] text-[10px]">Institution</h5>
-                                <p class="font-bold text-slate-400 leading-tight">University of Information Technology</p>
-                                <p class="text-[10px] uppercase text-slate-600 font-black mt-1">Vietnam National University Ho Chi Minh City</p>
-                            </div>
-                        </div>
-                        <div class="flex flex-col items-center md:items-end text-center md:text-right gap-4">
-                            <div class="space-y-1">
-                                <h5 class="font-black text-sky-400 uppercase tracking-[0.2em] text-[10px]">Course Lead</h5>
-                                <p class="text-xl font-black text-white">Dr. Dang Van Huynh</p>
-                                <p class="font-bold text-primary">danghv@uit.edu.vn</p>
-                                <p class="text-[10px] uppercase text-slate-500 font-bold tracking-tighter">Department of Computer Networks</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="pt-10 border-t border-white/5 w-full">
-                        <p class="text-[10px] font-black tracking-[0.4em] uppercase text-slate-700">
-                            &copy; 2026 NT2204 Syllabus &bull; Faculty of Computer Networks & Communications
+                        <p>
+                            We investigate the evolution of systems through the lens of <span class="text-slate-900 font-bold">Cloud-native design</span>, <strong>Serverless FaaS</strong>, and <strong>Distributed Intelligence</strong>. Key topics include Dataflow execution models, consensus-driven storage (e.g., Raft/Spanner), and the orchestration of AI models across edge-cloud continuums. By balancing rigorous paper reading with a heavy capstone project, students learn to architect systems that are scalable, fault-tolerant, and privacy-preserving.
                         </p>
                     </div>
                 </div>
-            </footer>
-        </main>
-    </div>
 
-    <!-- Application Logic -->
+                <div class="lg:w-1/3 w-full">
+                    <div class="uit-blue-gradient p-8 rounded-[2rem] text-white shadow-2xl">
+                        <h3 class="text-xs font-black uppercase tracking-[0.2em] mb-6 text-sky-300">Course Administration</h3>
+                        <p class="text-2xl font-black">Dr. Dang Van Huynh</p>
+                        <p class="text-blue-100/70 text-sm font-semibold mb-8">Department of Computer Networks</p>
+                        
+                        <div class="grid grid-cols-2 gap-4 border-t border-white/10 pt-8">
+                            <div class="text-center">
+                                <span class="block text-3xl font-black">08</span>
+                                <span class="text-[9px] uppercase font-black opacity-60">Lectures</span>
+                            </div>
+                            <div class="text-center">
+                                <span class="block text-3xl font-black">04</span>
+                                <span class="text-[9px] uppercase font-black opacity-60">Presentations</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Learning Outcomes Grid -->
+            <div class="mt-20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover-card border-t-4 border-primary">
+                    <div class="text-2xl mb-4">&#9729;</div>
+                    <h4 class="font-black text-slate-800 text-sm uppercase mb-2">Systems Mastery</h4>
+                    <p class="text-xs text-slate-500">Cloud-native and serverless paradigms with a focus on performance and availability.</p>
+                </div>
+                <div class="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover-card border-t-4 border-sky-400">
+                    <div class="text-2xl mb-4">&#129504;</div>
+                    <h4 class="font-black text-slate-800 text-sm uppercase mb-2">Distributed AI</h4>
+                    <p class="text-xs text-slate-500">Federated learning and distributed model inference across heterogeneous edge nodes.</p>
+                </div>
+                <div class="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover-card border-t-4 border-indigo-600">
+                    <div class="text-2xl mb-4">&#128274;</div>
+                    <h4 class="font-black text-slate-800 text-sm uppercase mb-2">Security & Privacy</h4>
+                    <p class="text-xs text-slate-500">BFT consensus, Trusted Execution Environments (TEEs), and Differential Privacy.</p>
+                </div>
+                <div class="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover-card border-t-4 border-cyan-500">
+                    <div class="text-2xl mb-4">&#9201;</div>
+                    <h4 class="font-black text-slate-800 text-sm uppercase mb-2">Advanced Scheduling</h4>
+                    <p class="text-xs text-slate-500">Dataflow execution and adaptive orchestration for multi-cloud and edge clusters.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Schedule -->
+        <section id="schedule" class="content-section">
+            <header class="mb-12 border-l-8 border-primary pl-6">
+                <h2 class="text-3xl font-black text-slate-900 uppercase tracking-tight">Weekly Schedule</h2>
+            </header>
+            
+            <div class="flex gap-2 mb-8 overflow-x-auto no-scrollbar -mx-4 px-4">
+                <button class="flex-shrink-0 px-8 py-2.5 bg-primary text-white rounded-full text-xs font-black shadow-lg" onclick="filterSchedule('all')">Full Syllabus</button>
+                <button class="flex-shrink-0 px-8 py-2.5 bg-white text-primary border border-primary/20 rounded-full text-xs font-black hover:bg-blue-50" onclick="filterSchedule('theory')">Phase 1: Theory</button>
+                <button class="flex-shrink-0 px-8 py-2.5 bg-white text-primary border border-primary/20 rounded-full text-xs font-black hover:bg-blue-50" onclick="filterSchedule('presentation')">Phase 2: Presentations</button>
+            </div>
+
+            <div class="space-y-4" id="schedule-container">
+                <!-- Data injected via JS -->
+            </div>
+        </section>
+
+        <!-- Section: Projects -->
+        <section id="projects" class="content-section">
+            <header class="mb-12 border-l-8 border-primary pl-6">
+                <h2 class="text-3xl font-black text-slate-900 uppercase tracking-tight">Capstone Projects</h2>
+            </header>
+
+            <div class="bg-slate-900 p-10 rounded-[2.5rem] text-white shadow-2xl mb-12 relative overflow-hidden">
+                <div class="absolute -right-10 -top-10 w-48 h-48 bg-primary rounded-full blur-[100px] opacity-30"></div>
+                <div class="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div>
+                        <h4 class="text-sky-400 font-black uppercase tracking-widest text-[10px] mb-3">Core Deliverable</h4>
+                        <p class="font-bold text-lg leading-tight">Architecture Design & Code Implementation</p>
+                    </div>
+                    <div>
+                        <h4 class="text-sky-400 font-black uppercase tracking-widest text-[10px] mb-3">Verification</h4>
+                        <p class="font-bold text-lg leading-tight">Systematic Testing & Benchmarking</p>
+                    </div>
+                    <div>
+                        <h4 class="text-sky-400 font-black uppercase tracking-widest text-[10px] mb-3">Defense</h4>
+                        <p class="font-bold text-lg leading-tight">Team Demo & Oral Presentation</p>
+                    </div>
+                    <div>
+                        <h4 class="text-sky-400 font-black uppercase tracking-widest text-[10px] mb-3">Academic Path</h4>
+                        <p class="font-bold text-lg leading-tight">Optional Scholarly Research Paper</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2 mb-10 overflow-x-auto no-scrollbar -mx-4 px-4" id="project-filters">
+                <!-- Filters injected via JS -->
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="projects-grid">
+                <!-- Projects injected via JS -->
+            </div>
+        </section>
+
+        <!-- Section: Grading -->
+        <section id="grading" class="content-section">
+            <header class="mb-12 border-l-8 border-primary pl-6">
+                <h2 class="text-3xl font-black text-slate-900 uppercase tracking-tight">Grading Policy</h2>
+            </header>
+            
+            <div class="bg-white p-8 sm:p-14 rounded-[3rem] shadow-xl border border-slate-100 flex flex-col lg:flex-row items-center gap-16">
+                <div class="chart-container">
+                    <canvas id="assessmentChart"></canvas>
+                </div>
+                <div class="flex-1 w-full space-y-6">
+                    <div class="flex items-center p-6 rounded-3xl bg-slate-50 border-l-[8px] border-primary">
+                        <div class="w-16 h-16 rounded-2xl bg-primary text-white flex items-center justify-center text-xl font-black mr-6 shrink-0">50%</div>
+                        <div>
+                            <h4 class="font-black text-slate-800 uppercase tracking-tighter">Final Examination</h4>
+                            <p class="text-xs text-slate-500">Comprehensive 90-minute examination covering module-specific theory.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center p-6 rounded-3xl bg-slate-50 border-l-[8px] border-sky-400">
+                        <div class="w-16 h-16 rounded-2xl bg-sky-400 text-white flex items-center justify-center text-xl font-black mr-6 shrink-0">35%</div>
+                        <div>
+                            <h4 class="font-black text-slate-800 uppercase tracking-tighter">Capstone Project</h4>
+                            <p class="text-xs text-slate-500">Evaluated on technical depth, report quality, and final demonstration.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center p-6 rounded-3xl bg-slate-50 border-l-[8px] border-slate-300">
+                        <div class="w-16 h-16 rounded-2xl bg-slate-300 text-white flex items-center justify-center text-xl font-black mr-6 shrink-0">15%</div>
+                        <div>
+                            <h4 class="font-black text-slate-800 uppercase tracking-tighter">Attendance</h4>
+                            <p class="text-xs text-slate-500">Assessed through active participation in lectures and peer reviews.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Readings -->
+        <section id="readings" class="content-section pb-20">
+            <header class="mb-12 border-l-8 border-primary pl-6">
+                <h2 class="text-3xl font-black text-slate-900 uppercase tracking-tight">References & Materials</h2>
+            </header>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <div class="space-y-6">
+                    <h3 class="font-black text-primary text-xs uppercase tracking-[0.2em] mb-4">Core Textbooks</h3>
+                    <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex items-start gap-6 hover-card">
+                        <span class="text-5xl">&#128213;</span>
+                        <div>
+                            <h4 class="font-black text-slate-800 text-lg leading-tight">Designing Data-Intensive Applications</h4>
+                            <p class="text-sm text-primary font-bold mt-1">Martin Kleppmann (O'Reilly)</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex items-start gap-6 hover-card">
+                        <span class="text-5xl">&#128213;</span>
+                        <div>
+                            <h4 class="font-black text-slate-800 text-lg leading-tight">Distributed Systems (4th Ed)</h4>
+                            <p class="text-sm text-primary font-bold mt-1">Maarten van Steen & Tanenbaum</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-900 p-10 rounded-[3rem] text-white">
+                    <h3 class="font-black text-sky-400 text-xs uppercase tracking-[0.2em] mb-8">Selected Papers</h3>
+                    <ul class="space-y-6">
+                        <li class="flex items-start gap-4 text-xs font-medium leading-relaxed opacity-90">
+                            <span class="bg-sky-500 text-slate-900 px-2 py-0.5 rounded font-black text-[10px]">OSDI'04</span>
+                            "MapReduce: Simplified Data Processing on Large Clusters", Dean & Ghemawat.
+                        </li>
+                        <li class="flex items-start gap-4 text-xs font-medium leading-relaxed opacity-90">
+                            <span class="bg-sky-500 text-slate-900 px-2 py-0.5 rounded font-black text-[10px]">OSDI'12</span>
+                            "Spanner: Google's Globally-Distributed Database", Corbett et al.
+                        </li>
+                        <li class="flex items-start gap-4 text-xs font-medium leading-relaxed opacity-90">
+                            <span class="bg-sky-500 text-slate-900 px-2 py-0.5 rounded font-black text-[10px]">SOSP'23</span>
+                            "On-demand Container Loading for Serverless Computing".
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Global Footer -->
+    <footer class="bg-slate-950 text-white pt-24 pb-16 px-6">
+        <div class="max-w-7xl mx-auto flex flex-col items-center text-center gap-16">
+            <div class="space-y-6 max-w-2xl">
+                <div class="h-1.5 w-16 bg-primary mx-auto rounded-full"></div>
+                <p class="text-2xl sm:text-4xl font-black italic tracking-tight text-slate-100">
+                    "Scalable intelligence through architectural excellence."
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-16 w-full pt-16 border-t border-white/5 items-center">
+                <!-- Col 1 -->
+                <div class="flex flex-col items-center md:items-start text-center md:text-left space-y-4">
+                    <img src="https://www.uit.edu.vn/strapi/uploads/UIT_20_01_f687725dd2.png" alt="UIT Logo" class="h-16 brightness-0 invert opacity-100">
+                    <p class="text-xs font-bold tracking-[0.2em] text-slate-500 uppercase">Academic Excellence</p>
+                </div>
+
+                <!-- Col 2 -->
+                <div class="flex flex-col items-center justify-center space-y-2">
+                    <h5 class="font-black text-sky-400 uppercase tracking-widest text-[10px]">Institution</h5>
+                    <p class="font-bold text-slate-200">University of Information Technology</p>
+                    <p class="text-[10px] text-slate-500 uppercase tracking-tighter">Vietnam National University Ho Chi Minh City</p>
+                </div>
+
+                <!-- Col 3 -->
+                <div class="flex flex-col items-center md:items-end text-center md:text-right space-y-2">
+                    <h5 class="font-black text-sky-400 uppercase tracking-widest text-[10px]">Course Lead</h5>
+                    <p class="text-xl font-black">Dr. Dang Van Huynh</p>
+                    <p class="font-bold text-primary">danghv@uit.edu.vn</p>
+                    <p class="text-[10px] uppercase text-slate-600 font-bold">Department of Computer Networks</p>
+                </div>
+            </div>
+
+            <div class="pt-16 border-t border-white/5 w-full text-center">
+                <p class="text-[10px] font-black tracking-[0.5em] uppercase text-slate-800">
+                    &copy; 2026 NT2204 Course &bull; VNUHCM - UIT &bull; ALL RIGHTS RESERVED
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JS Logic -->
     <script>
         const scheduleData = [
-            { week: 1, type: 'theory', title: 'Introduction & Cloud-Native Architectures', desc: 'Evolution from microservices to service meshes, gRPC protocols, and consistency foundations.' },
-            { week: 2, type: 'theory', title: 'Distributed Data & Global Storage', desc: 'Consistency models, replication, and deep-dive into Google Spanner and sharded KV stores.' },
-            { week: 3, type: 'theory', title: 'Dataflow Execution & Scheduling', desc: 'MapReduce paradigms, cluster scheduling via YARN/Mesos, and dataflow execution tradeoffs.' },
-            { week: 4, type: 'theory', title: 'Serverless Computing & FaaS', desc: 'Stateless execution, cold-start mitigation, and event-driven orchestration patterns.' },
-            { week: 5, type: 'theory', title: 'Distributed AI/ML Systems', desc: 'Training at scale: Parameter servers, synchronous vs asynchronous updates, Ring All-Reduce.' },
-            { week: 6, type: 'theory', title: 'Edge Computing & Orchestration', desc: 'Computing at the network edge, adaptive offloading algorithms, and service orchestration.' },
-            { week: 7, type: 'theory', title: 'Distributed Security & Privacy', desc: 'BFT consensus, Trusted Execution (TEEs), and Privacy-preserving data processing.' },
-            { week: 8, type: 'theory', title: 'Advanced Production Systems', desc: 'Chaos engineering, SRE patterns, and observability in large-scale decentralized systems.' },
-            { week: 9, type: 'presentation', title: 'Capstone Presentation Slot 1', desc: 'Initial project cohort presentations focusing on architectural design and research methodology.' },
-            { week: 10, type: 'presentation', title: 'Capstone Presentation Slot 2', desc: 'Second cohort presentations and peer review sessions for implementation depth.' },
-            { week: 11, type: 'presentation', title: 'Capstone Presentation Slot 3', desc: 'Third cohort group presentations and interactive system demos.' },
-            { week: 12, type: 'presentation', title: 'Capstone Presentation Slot 4', desc: 'Final presentations, research paper summaries, and course closure.' }
+            { week: 1, type: 'theory', title: 'Modern Cloud-Native Architectures', desc: 'Evolution from microservices to service meshes, gRPC deep-dive, and consistency foundations.' },
+            { week: 2, type: 'theory', title: 'Global Storage & Distributed Databases', desc: 'Consistency models, sharding vs. replication, and a case study of Google Spanner.' },
+            { week: 3, type: 'theory', title: 'Dataflow Execution & Scheduling', desc: 'Analysis of big data processing pipelines, MapReduce mechanics, and YARN/Mesos scheduling.' },
+            { week: 4, type: 'theory', title: 'Serverless & FaaS Paradigms', desc: 'Serverless architecture, cold-start mitigation, and event-driven state management.' },
+            { week: 5, type: 'theory', title: 'Distributed AI/ML Frameworks', desc: 'Parameter servers, synchronized stochastic gradient descent, and Ring All-Reduce.' },
+            { week: 6, type: 'theory', title: 'Edge Computing & Orchestration', desc: 'Computing at the edge, service offloading strategies, and adaptive orchestration algorithms.' },
+            { week: 7, type: 'theory', title: 'Security & Adversarial Computing', desc: 'Byzantine Fault Tolerance, Trusted Execution Environments, and privacy-preserving protocols.' },
+            { week: 8, type: 'theory', title: 'Production Systems & Chaos Engineering', desc: 'Observability, automated fault injection, and the reliability engineering lifecycle.' },
+            { week: 9, type: 'presentation', title: 'Capstone Presentation Slot 1', desc: 'Group presentations focusing on architectural design and research methodology.' },
+            { week: 10, type: 'presentation', title: 'Capstone Presentation Slot 2', desc: 'System demos and implementation defense session.' },
+            { week: 11, type: 'presentation', title: 'Capstone Presentation Slot 3', desc: 'Research findings and performance benchmarking evaluations.' },
+            { week: 12, type: 'presentation', title: 'Capstone Presentation Slot 4', desc: 'Final course wrap-up and submission of research papers.' }
         ];
 
         const projectData = [
-            { id: 1, cat: 'Cloud/Serverless', title: 'Predictive FaaS Warming', desc: 'Mitigate cold-starts in OpenFaaS using predictive invocation modeling.' },
+            { id: 1, cat: 'Cloud/Serverless', title: 'Predictive FaaS Warming', desc: 'Implement predictive invocation modeling to mitigate cold-starts in OpenFaaS.' },
             { id: 2, cat: 'Cloud/Serverless', title: 'Adaptive gRPC Balancer', desc: 'Build an L7 load balancer that reacts to dynamic microservice latency.' },
             { id: 3, cat: 'Cloud/Serverless', title: 'Energy-Efficient K8s Scheduling', desc: 'Custom scheduler optimizing for data center power efficiency metrics.' },
-            { id: 4, cat: 'Cloud/Serverless', title: 'Serverless Workflow Engine', desc: 'Design an orchestrator for complex stateful function DAGs.' },
+            { id: 4, cat: 'Cloud/Serverless', title: 'Serverless Workflow DAGs', desc: 'Design an orchestrator for complex stateful function workflows.' },
             { id: 5, cat: 'AI/ML', title: 'Federated Edge Learning', desc: 'Implement FL updates with straggler mitigation on IoT devices.' },
-            { id: 6, cat: 'AI/ML', title: 'Distributed Model Partitioning', desc: 'Split DNN layers across Edge and Cloud for latency-sensitive inference.' },
+            { id: 6, cat: 'AI/ML', title: 'Distributed Model Splitting', desc: 'Partition DNN layers across Edge and Cloud for latency-sensitive inference.' },
             { id: 7, cat: 'AI/ML', title: 'Decentralized Gossip Learning', desc: 'P2P model training without central coordinators via gossip protocols.' },
-            { id: 8, cat: 'AI/ML', title: 'Privacy-Preserving Inference', desc: 'Implement differential privacy for distributed inference on edge datasets.' },
+            { id: 8, cat: 'AI/ML', title: 'Privacy-Preserving Edge Inference', desc: 'Differential privacy for real-time inference on distributed edge data.' },
             { id: 9, cat: 'Security/Privacy', title: 'Lightweight BFT for IoT', desc: 'Optimize PBFT consensus for resource-constrained edge environments.' },
             { id: 10, cat: 'Security/Privacy', title: 'TEE-based Secure Compute', desc: 'Execute secure ML workloads using Intel SGX/Nitro enclaves.' },
-            { id: 11, cat: 'Security/Privacy', title: 'Homomorphic Data Mapping', desc: 'Compute MapReduce pipelines over encrypted cloud storage.' },
-            { id: 12, cat: 'Security/Privacy', title: 'Blockchain-based Trust Mesh', desc: 'Decentralized identity management for large-scale distributed sensors.' },
+            { id: 11, cat: 'Security/Privacy', title: 'Homomorphic MapReduce', desc: 'Compute analytics over fully encrypted cloud-hosted datasets.' },
+            { id: 12, cat: 'Security/Privacy', title: 'Blockchain-based Trust Mesh', desc: 'Decentralized identity and trust management for large sensor networks.' },
             { id: 13, cat: 'Data/Storage', title: 'Raft-based Key-Value Store', desc: 'Implementation of a consistent, high-availability storage engine.' },
-            { id: 14, cat: 'Data/Storage', title: 'Distributed Graph Engine', desc: 'Vertex-centric graph processing for large social network analytics.' },
-            { id: 15, cat: 'Data/Storage', title: 'Fault-Tolerant Stream Engine', desc: 'Exactly-once processing semantics for high-throughput data streams.' },
-            { id: 16, cat: 'Data/Storage', title: 'Global Cache Coherence', desc: 'Evaluate cache strategies for multi-region globally distributed apps.' },
+            { id: 14, cat: 'Data/Storage', title: 'Pregel Graph Engine', desc: 'Vertex-centric graph processing for large-scale social network analytics.' },
+            { id: 15, cat: 'Data/Storage', title: 'Exactly-Once Stream Processor', desc: 'Fault-tolerant stream processing with exactly-once semantic guarantees.' },
+            { id: 16, cat: 'Data/Storage', title: 'Global Cache Coherence', desc: 'Evaluating cache strategies for multi-region globally distributed apps.' },
             { id: 17, cat: 'Edge/Systems', title: 'Wasm-at-Edge Isolation', desc: 'Evaluating WebAssembly for multi-tenant edge workload isolation.' },
-            { id: 18, cat: 'Edge/Systems', title: 'Chaos Framework for Cloud DBs', desc: 'Injecting network partitions to test recovery of distributed clusters.' },
-            { id: 19, cat: 'Edge/Systems', title: 'eBPF Service Observability', desc: 'Kernel-level traffic profiling for microservice latency analysis.' },
-            { id: 20, cat: 'Edge/Systems', title: 'Adaptive AR Offloading', desc: 'Dynamic computation steering for low-latency augmented reality.' }
+            { id: 18, cat: 'Edge/Systems', title: 'Chaos Framework for Cloud DBs', desc: 'Automated network partition injection to test database cluster recovery.' },
+            { id: 19, cat: 'Edge/Systems', title: 'eBPF Service Observability', desc: 'Kernel-level traffic profiling for microservice performance analysis.' },
+            { id: 20, cat: 'Edge/Systems', title: 'Adaptive AR Offloading', desc: 'Dynamic computation steering for low-latency mobile augmented reality.' }
         ];
 
         let currentScheduleFilter = 'all';
         let currentProjectFilter = 'All';
 
-        // Initialize App
         document.addEventListener('DOMContentLoaded', () => {
             initChart();
             renderSchedule();
             initProjectFilters();
             renderProjects();
             
-            // Scroll Spy logic for nav highlights
-            const scrollArea = document.getElementById('main-scroll-area');
+            // Tab highlight Spy
+            const scrollArea = window;
             scrollArea.addEventListener('scroll', () => {
                 const sections = document.querySelectorAll('.content-section');
-                const scrollPos = scrollArea.scrollTop + 200;
+                const scrollPos = window.scrollY + 200;
                 sections.forEach(section => {
                     if (scrollPos >= section.offsetTop && scrollPos < (section.offsetTop + section.offsetHeight)) {
                         const id = section.getAttribute('id');
-                        document.querySelectorAll('.nav-item').forEach(btn => {
+                        document.querySelectorAll('.nav-tab').forEach(btn => {
                             btn.classList.toggle('active', btn.getAttribute('onclick').includes(id));
                         });
                     }
@@ -435,12 +432,10 @@
             });
         });
 
-        // Mobile Drawer Controller
         function toggleDrawer() {
             const drawer = document.getElementById('mobile-drawer');
             const overlay = document.getElementById('drawer-overlay');
             const isOpen = !drawer.classList.contains('-translate-x-full');
-            
             if (isOpen) {
                 drawer.classList.add('-translate-x-full');
                 overlay.classList.add('hidden');
@@ -450,26 +445,18 @@
             }
         }
 
-        // Navigation Dispatcher
         function navigateTo(sectionId) {
             const el = document.getElementById(sectionId);
             if(el) {
-                document.getElementById('main-scroll-area').scrollTo({
-                    top: el.offsetTop - 20,
+                const navHeight = document.querySelector('nav').offsetHeight;
+                window.scrollTo({
+                    top: el.offsetTop - navHeight,
                     behavior: 'smooth'
                 });
-                
-                // Close mobile menu if active
-                const drawer = document.getElementById('mobile-drawer');
-                if (!drawer.classList.contains('-translate-x-full')) toggleDrawer();
-
-                document.querySelectorAll('.nav-item').forEach(btn => {
-                    btn.classList.toggle('active', btn.getAttribute('onclick').includes(sectionId));
-                });
+                if (!document.getElementById('mobile-drawer').classList.contains('-translate-x-full')) toggleDrawer();
             }
         }
 
-        // Grading Chart
         function initChart() {
             const ctx = document.getElementById('assessmentChart').getContext('2d');
             new Chart(ctx, {
@@ -500,7 +487,6 @@
             });
         }
 
-        // Schedule Logic
         function filterSchedule(type) {
             currentScheduleFilter = type;
             renderSchedule();
@@ -526,14 +512,14 @@
                 
                 container.innerHTML += `
                     <div class="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
-                        <button class="w-full p-5 text-left flex justify-between items-center group touch-manipulation" onclick="toggleWeek(${index})">
-                            <div class="flex items-center gap-5">
-                                <span class="text-[10px] font-black w-8 text-primary opacity-40 uppercase tracking-tighter">W${item.week}</span>
-                                <span class="font-bold text-slate-800 text-sm group-hover:text-primary transition-colors">${item.title}</span>
+                        <button class="w-full p-6 text-left flex justify-between items-center group touch-manipulation" onclick="toggleWeek(${index})">
+                            <div class="flex items-center gap-6">
+                                <span class="text-[10px] font-black w-10 text-primary opacity-40 uppercase">WK ${item.week}</span>
+                                <span class="font-bold text-slate-800 text-base sm:text-lg group-hover:text-primary transition-colors">${item.title}</span>
                             </div>
                             <span id="week-icon-${index}" class="text-slate-300 text-[10px] group-hover:text-primary">&#9654;</span>
                         </button>
-                        <div id="week-content-${index}" class="hidden p-6 bg-slate-50 border-t border-slate-100 text-xs leading-relaxed text-slate-600">
+                        <div id="week-content-${index}" class="hidden p-8 bg-slate-50 border-t border-slate-100 text-sm leading-relaxed text-slate-600">
                             ${item.desc}
                         </div>
                     </div>
@@ -541,13 +527,12 @@
             });
         }
 
-        // Project Catalog Logic
         function initProjectFilters() {
             const categories = ['All', ...new Set(projectData.map(p => p.cat))];
             const filterContainer = document.getElementById('project-filters');
             categories.forEach(cat => {
                 const btn = document.createElement('button');
-                btn.className = `flex-shrink-0 px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all filter-btn ${cat === 'All' ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'bg-white text-primary border border-primary/10'}`;
+                btn.className = `flex-shrink-0 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all filter-btn ${cat === 'All' ? 'bg-primary text-white shadow-lg' : 'bg-white text-primary border border-primary/20'}`;
                 btn.innerText = cat;
                 btn.onclick = () => setProjectFilter(cat, btn);
                 filterContainer.appendChild(btn);
@@ -557,11 +542,11 @@
         function setProjectFilter(cat, clickedBtn) {
             currentProjectFilter = cat;
             document.querySelectorAll('.filter-btn').forEach(b => {
-                b.classList.remove('bg-primary', 'text-white', 'shadow-lg', 'shadow-primary/30');
-                b.classList.add('bg-white', 'text-primary', 'border', 'border-primary/10');
+                b.classList.remove('bg-primary', 'text-white', 'shadow-lg');
+                b.classList.add('bg-white', 'text-primary', 'border', 'border-primary/20');
             });
-            clickedBtn.classList.remove('bg-white', 'text-primary', 'border', 'border-primary/10');
-            clickedBtn.classList.add('bg-primary', 'text-white', 'shadow-lg', 'shadow-primary/30');
+            clickedBtn.classList.remove('bg-white', 'text-primary', 'border', 'border-primary/20');
+            clickedBtn.classList.add('bg-primary', 'text-white', 'shadow-lg');
             renderProjects();
         }
 
@@ -571,13 +556,13 @@
             const filtered = currentProjectFilter === 'All' ? projectData : projectData.filter(p => p.cat === currentProjectFilter);
             filtered.forEach(p => {
                 grid.innerHTML += `
-                    <div class="bg-white p-6 rounded-3xl border border-slate-100 hover-card shadow-sm flex flex-col h-full">
-                        <div class="flex justify-between items-start mb-4">
-                            <span class="text-[9px] font-black uppercase tracking-widest text-primary/60 bg-blue-50 px-3 py-1 rounded-full">${p.cat}</span>
+                    <div class="bg-white p-8 rounded-[2rem] border border-slate-100 hover-card shadow-sm flex flex-col h-full">
+                        <div class="flex justify-between items-start mb-6">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-primary/60 bg-blue-50 px-3 py-1.5 rounded-full">${p.cat}</span>
                         </div>
-                        <h4 class="font-black text-slate-900 text-base mb-2 leading-tight">${p.title}</h4>
+                        <h4 class="font-black text-slate-900 text-lg mb-3 leading-tight tracking-tight">${p.title}</h4>
                         <p class="text-xs text-slate-500 font-medium leading-relaxed mb-6 flex-grow">${p.desc}</p>
-                        <div class="h-1 w-8 bg-slate-100 rounded"></div>
+                        <div class="h-1.5 w-10 bg-primary/20 rounded-full"></div>
                     </div>
                 `;
             });
